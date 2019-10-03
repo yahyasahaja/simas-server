@@ -1,0 +1,66 @@
+# Reference: https://www.exclamationlabs.com/blog/continuous-deployment-to-npm-using-gitlab-ci/
+
+# GitLab uses docker in the background, so we need to specify the 
+# image versions. This is useful because we're freely to use
+# multiple node versions to work with it. They come from the docker
+# repo.
+# Uses docker
+# image: docker:latest
+
+# And to cache them as well.
+cache:
+  paths:
+    - node_modules/
+    - .yarn
+
+# We tell GitLab to install all the packages
+# before running anything.
+# Docker images come with yarn preinstalled
+# You specify the stages. Those are the steps that GitLab will go through 
+# Order matters.  
+stages:
+  - build
+  - staging
+  - production
+
+# test and build
+Build:
+  image: node:12.5.0
+  stage: build
+  before_script: 
+    - yarn config set cache-folder .yarn
+    - yarn install 
+  script:
+    - yarn build
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - build
+
+Deploy to Staging:
+  image: alpine
+  stage: staging
+  script: 
+    - apk add --no-cache rsync openssh
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" >> ~/.ssh/id_dsa
+    - chmod 600 ~/.ssh/id_dsa
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+    - ssh ubuntu@sans.ngopi.men "cd sansapp/server/prod/repo && git fetch origin master && git reset --hard origin/master && yarn"
+    - rsync -rav build ubuntu@sans.ngopi.men:sansapp/server/staging/repo
+  only:
+    - develop
+
+Deploy to Production:
+  image: alpine
+  stage: production
+  script:
+    - apk add --no-cache rsync openssh
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" >> ~/.ssh/id_dsa
+    - chmod 600 ~/.ssh/id_dsa
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+    - ssh ubuntu@sans.ngopi.men "cd sansapp/server/prod/repo && git fetch origin master && git reset --hard origin/master && yarn"
+    - rsync -rav build ubuntu@sans.ngopi.men:sansapp/server/prod/repo
+  only:
+    - master
