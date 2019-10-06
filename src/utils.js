@@ -169,7 +169,6 @@ export const findNearbyRestaurants = async (target) => {
 
 export const paginate = (query, { page, limit }) => {
   const offset = page * limit
-  limit += offset
  
   return {
     ...query,

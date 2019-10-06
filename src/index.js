@@ -41,7 +41,7 @@ app.get('/karyawan', async (req, res) => {
     where = {
       [Sequelize.Op.or]: [
         {
-          name: {
+          nama: {
             [Sequelize.Op.like]: `%${search}%`,
           }
         },
@@ -100,7 +100,7 @@ app.get('/pensiun', async (req, res) => {
     
     res.json({
       karyawan,
-      totalPages: Math.floor(count / limit),
+      totalPages: Math.ceil(count / limit),
     })
   } catch (err) {
     throw new Error(err)
