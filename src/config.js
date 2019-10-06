@@ -5,16 +5,16 @@ console.log(process.env.NODE_ENV)
 let database
 if (test) {
   database = {
-    DATABASE_NAME: 'sansapp',
+    DATABASE_NAME: 'simas',
     USER: 'root',
     PASSWORD: 'yahya123',
     HOST: 'localhost',
-    DIALECT: 'mysql',
+    DIALECT: 'mysql', 
     PORT: 3306,
     POOL_SIZE: 10,
   }
 } else database = {
-  DATABASE_NAME: 'sansapp',
+  DATABASE_NAME: 'simas',
   USER: 'root',
   PASSWORD: 'sansaja123',
   HOST: 'localhost',

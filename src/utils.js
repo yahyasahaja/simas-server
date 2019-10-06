@@ -167,6 +167,17 @@ export const findNearbyRestaurants = async (target) => {
   return Promise.resolve(restaurants) //ASC
 }
 
+export const paginate = (query, { page, limit }) => {
+  const offset = page * limit
+  limit += offset
+ 
+  return {
+    ...query,
+    offset,
+    limit,
+  }
+}
+
 
 export default {
   sendEmailVerification,
@@ -174,4 +185,5 @@ export default {
   processUpload,
   getEuclideanDistance,
   deg2rad,
+  paginate,
 }
