@@ -150,7 +150,7 @@ secure.patch('/karyawan/:id', async (req, res) => {
     let body = req.body
 
     if (karyawan) {
-      for (let i of body) {
+      for (let i in body) {
         karyawan[i] = body[i]
       }
 
