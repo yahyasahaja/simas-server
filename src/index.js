@@ -4,6 +4,7 @@ import Express from 'express'
 import compression from 'compression'
 import bodyParser from 'body-parser'
 import Sequelize from 'sequelize'
+import jwt from 'jsonwebtoken'
 // import path from 'path'
 
 //EVENTS
@@ -33,8 +34,44 @@ app.use((req, res, next) => {
 //COMPRESSION
 app.use(compression())
 
+const SECRET = 'simas1232425(*9hreh8989*989J()#$'
+
+app.get('/login', async (req, res) => {
+  let {
+    username,
+    password
+  } = req.body
+
+  if (username === 'admin' && password === 'admin') {
+    let token = jwt.sign({
+      name: 'Admin'
+    }, SECRET)
+
+    res.status(200).json({
+      is_ok: true,
+      token,
+    })
+  }
+})
+
+// app.use((req, res, next) => {
+//   let token = req.headers.Authorization
+//   if (token) {
+//     req.isLoggedIn = true
+//     req.token = token
+//     next()
+//   }
+
+//   res.status(401).json({
+//     message: 'Unauthenticated'
+//   })
+// })
+
 app.get('/karyawan', async (req, res) => {
-  let { page = 0, limit = 10, search } = req.query
+  let { page = 0, limit = 10, search = '' } = req.query
+  page = parseInt(page)
+  limit = parseInt(limit)
+
   let where = {}
 
   if (search) {
@@ -61,14 +98,25 @@ app.get('/karyawan', async (req, res) => {
     { page, limit }
   )
 
+  console.log('pagination', pagination, where, search)
+
   try {
-    let { rows: karyawan, count } = await db.models.Karyawan.findAndCountAll(
+    let { rows: data, count } = await db.models.Karyawan.findAndCountAll(
       pagination
     )
+
+    let totalPages = Math.ceil(count / limit)
     
     res.json({
-      karyawan,
-      totalPages: Math.floor(count / limit),
+      data,
+      meta: {
+        totalPages,
+        page,
+      },
+      links: {
+        prev: page !== 0,
+        next: page !== totalPages
+      },
     })
   } catch (err) {
     throw new Error(err)
@@ -77,8 +125,11 @@ app.get('/karyawan', async (req, res) => {
 
 app.get('/pensiun', async (req, res) => {
   let { page = 0, limit = 10 } = req.query
+  page = parseInt(page)
+  limit = parseInt(limit)
+  
   try {
-    let { rows: karyawan, count } = await db.models.Karyawan.findAndCountAll(
+    let { rows: data, count } = await db.models.Karyawan.findAndCountAll(
       paginate(
         { where: {
           [Sequelize.Op.and]: [
@@ -97,10 +148,19 @@ app.get('/pensiun', async (req, res) => {
         { page, limit }
       )
     )
+
+    let totalPages = Math.ceil(count / limit)
     
     res.json({
-      karyawan,
-      totalPages: Math.ceil(count / limit),
+      data,
+      meta: {
+        totalPages,
+        page,
+      },
+      links: {
+        prev: page !== 0,
+        next: page !== totalPages
+      },
     })
   } catch (err) {
     throw new Error(err)
