@@ -5,6 +5,7 @@ import compression from 'compression'
 import bodyParser from 'body-parser'
 import Sequelize from 'sequelize'
 import jwt from 'jsonwebtoken'
+import cors from 'cors'
 // import path from 'path'
 
 //EVENTS
@@ -20,7 +21,8 @@ const PORT = process.env.NODE_ENV === 'development' ? 8080 : 9090
 let app = Express()
 
 //PARSER
-bodyParser.urlencoded({extended: true})
+app.use(bodyParser.json()) // for parsing application/json
+app.use(bodyParser.urlencoded({ extended: true })) // for parsing
 
 //CUSTOM_CORS
 app.use((req, res, next) => {
@@ -31,12 +33,15 @@ app.use((req, res, next) => {
   next()
 })
 
+app.use(cors())
+
 //COMPRESSION
 app.use(compression())
 
 const SECRET = 'simas1232425(*9hreh8989*989J()#$'
 
-app.get('/login', async (req, res) => {
+let auth = Express.Router()
+auth.post('/login', async (req, res) => {
   let {
     username,
     password
@@ -52,22 +57,40 @@ app.get('/login', async (req, res) => {
       token,
     })
   }
+
+  res.status(401).json({
+    is_ok: false,
+    message: 'Wrong username or password'
+  })
 })
 
-// app.use((req, res, next) => {
-//   let token = req.headers.Authorization
-//   if (token) {
-//     req.isLoggedIn = true
-//     req.token = token
-//     next()
-//   }
+app.use('/auth', auth)
 
-//   res.status(401).json({
-//     message: 'Unauthenticated'
-//   })
-// })
+let secure = Express.Router()
 
-app.get('/karyawan', async (req, res) => {
+secure.use((req, res, next) => {
+  let bearerToken = req.headers.authorization
+  if (bearerToken) {
+    let bearer = bearerToken.split(' ')[0]
+    let token = bearerToken.split(' ')[1]
+
+    if (bearer && token) {
+      let isVerified = jwt.verify(token, SECRET)
+      if (isVerified) {
+        req.isLoggedIn = true
+        req.token = token
+        next()
+        return
+      }
+    }
+  }
+
+  res.status(401).json({
+    message: 'Unauthenticated'
+  })
+})
+
+secure.get('/karyawan', async (req, res) => {
   let { page = 0, limit = 10, search = '' } = req.query
   page = parseInt(page)
   limit = parseInt(limit)
@@ -98,8 +121,6 @@ app.get('/karyawan', async (req, res) => {
     { page, limit }
   )
 
-  console.log('pagination', pagination, where, search)
-
   try {
     let { rows: data, count } = await db.models.Karyawan.findAndCountAll(
       pagination
@@ -123,7 +144,31 @@ app.get('/karyawan', async (req, res) => {
   }
 })
 
-app.get('/pensiun', async (req, res) => {
+secure.patch('/karyawan/:id', async (req, res) => {
+  try {
+    let karyawan = await db.models.Karyawan.findByPk(req.params.id)
+    let body = req.body
+
+    if (karyawan) {
+      for (let i of body) {
+        karyawan[i] = body[i]
+      }
+
+      await karyawan.save()
+      return res.status(200).json({
+        is_ok: true
+      })
+    }
+    
+    res.status(404).json({
+      message: 'Not found'
+    })
+  } catch (err) {
+    throw new Error(err)
+  }
+})
+
+secure.get('/pensiun', async (req, res) => {
   let { page = 0, limit = 10 } = req.query
   page = parseInt(page)
   limit = parseInt(limit)
@@ -167,28 +212,51 @@ app.get('/pensiun', async (req, res) => {
   }
 })
 
-// app.get('/pensiun', async (req, res) => {
-//   let { page, limit } = req.query
-//   try {
-//     let { rows: karyawan, count: totalCount } = await db.models.Karyawan.findAndCountAll(
-//       paginate(
-//         { where: {
-//           pensiun: {
-//             [Sequelize.Op.lt]: new Date()
-//           }
-//         }},
-//         { page, limit }
-//       )
-//     )
+secure.get('/pangkat', async (req, res) => {
+  let { page = 0, limit = 10 } = req.query
+  page = parseInt(page)
+  limit = parseInt(limit)
+  
+  try {
+    let { rows: data, count } = await db.models.Karyawan.findAndCountAll(
+      paginate(
+        { where: {
+          [Sequelize.Op.and]: [
+            {
+              tmt_gaji_berkala_terakhir: {
+                [Sequelize.Op.lt]: new Date()
+              }
+            },
+            {
+              tmt_gaji_berkala_terakhir: {
+                [Sequelize.Op.notLike]: '0000-00-00'
+              }
+            },
+          ]}
+        },
+        { page, limit }
+      )
+    )
+
+    let totalPages = Math.ceil(count / limit)
     
-//     res.json({
-//       karyawan,
-//       totalCount,
-//     })
-//   } catch (err) {
-//     throw new Error(err)
-//   }
-// })
+    res.json({
+      data,
+      meta: {
+        totalPages,
+        page,
+      },
+      links: {
+        prev: page !== 0,
+        next: page !== totalPages
+      },
+    })
+  } catch (err) {
+    throw new Error(err)
+  }
+})
+
+app.use('/', secure) 
 
 //START_SERVER 
 //LISTEN TO PORT
