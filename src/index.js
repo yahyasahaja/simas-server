@@ -41,6 +41,8 @@ app.use(compression())
 const SECRET = 'simas1232425(*9hreh8989*989J()#$'
 
 let auth = Express.Router()
+//login
+//request post
 auth.post('/login', async (req, res) => {
   let {
     username,
@@ -133,6 +135,7 @@ secure.get('/karyawan', async (req, res) => {
       meta: {
         totalPages,
         page,
+        totalCount: count,
       },
       links: {
         prev: page !== 0,
@@ -141,6 +144,42 @@ secure.get('/karyawan', async (req, res) => {
     })
   } catch (err) {
     throw new Error(err)
+  }
+})
+
+secure.post('/karyawan', async (req, res) => {
+  try {
+    let body = req.body
+
+    await db.models.Karyawan.create(body)
+    res.status(201).json({
+      is_ok: true,
+      message: 'Data berhasil ditambahkan'
+    })
+  } catch (err) {
+    res.status(500).json({
+      is_ok: false,
+      message: err.message
+    })
+  }
+})
+
+secure.delete('/karyawan/:id', async (req, res) => {
+  try {
+    await db.models.Karyawan.destroy({
+      where: {
+        id: req.params.id
+      }
+    })
+    res.status(201).json({
+      is_ok: true,
+      message: 'Data berhasil dihapus'
+    })
+  } catch (err) {
+    res.status(500).json({
+      is_ok: false,
+      message: err.message
+    })
   }
 })
 
@@ -201,6 +240,7 @@ secure.get('/pensiun', async (req, res) => {
       meta: {
         totalPages,
         page,
+        totalCount: count,
       },
       links: {
         prev: page !== 0,
@@ -245,6 +285,7 @@ secure.get('/pangkat', async (req, res) => {
       meta: {
         totalPages,
         page,
+        totalCount: count,
       },
       links: {
         prev: page !== 0,
