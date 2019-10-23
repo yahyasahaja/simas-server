@@ -48,8 +48,6 @@ function formatDate(s) {
   if (s.substr(0, 4).indexOf('-') !== -1) {
     res = `${year}-${month}-${day}`
 
-    console.log(res)
-
     if (res === '--') res = '0000-00-00'
   }
 
@@ -66,6 +64,8 @@ app.get('/reformatdate', async (req, res) => {
     k.tanggal_lahir = formatDate(k.tanggal_lahir)
     await k.save()
   }
+
+  res.json(karyawans)
 })
 
 const SECRET = 'simas1232425(*9hreh8989*989J()#$'
@@ -238,7 +238,7 @@ secure.patch('/karyawan/:id', async (req, res) => {
 })
 
 secure.get('/pensiun', async (req, res) => {
-  let { page = 0, limit = 10 } = req.query
+  let { page = 0, limit = 10, search } = req.query
   page = parseInt(page)
   limit = parseInt(limit)
   
@@ -246,6 +246,18 @@ secure.get('/pensiun', async (req, res) => {
     let { rows: data, count } = await db.models.Karyawan.findAndCountAll(
       paginate(
         { where: {
+          [Sequelize.Op.or]: [
+            {
+              nama: {
+                [Sequelize.Op.like]: `%${search}%`,
+              }
+            },
+            {
+              nip: {
+                [Sequelize.Op.like]: `%${search}%`,
+              }
+            },
+          ],
           [Sequelize.Op.and]: [
             {
               pensiun: {
@@ -283,7 +295,7 @@ secure.get('/pensiun', async (req, res) => {
 })
 
 secure.get('/pangkat', async (req, res) => {
-  let { page = 0, limit = 10 } = req.query
+  let { page = 0, limit = 10, month = '04', search = '' } = req.query
   page = parseInt(page)
   limit = parseInt(limit)
   
@@ -291,15 +303,32 @@ secure.get('/pangkat', async (req, res) => {
     let { rows: data, count } = await db.models.Karyawan.findAndCountAll(
       paginate(
         { where: {
+          [Sequelize.Op.or]: [
+            {
+              nama: {
+                [Sequelize.Op.like]: `%${search}%`,
+              }
+            },
+            {
+              nip: {
+                [Sequelize.Op.like]: `%${search}%`,
+              }
+            },
+          ],
           [Sequelize.Op.and]: [
             {
-              tmt_gaji_berkala_terakhir: {
+              tmt_pangkat_terakhir: {
                 [Sequelize.Op.lt]: new Date()
               }
             },
             {
-              tmt_gaji_berkala_terakhir: {
+              tmt_pangkat_terakhir: {
                 [Sequelize.Op.notLike]: '0000-00-00'
+              }
+            },
+            {
+              tmt_pangkat_terakhir: {
+                [Sequelize.Op.like]: `%-${month}-%`
               }
             },
           ]}
