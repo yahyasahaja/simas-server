@@ -38,6 +38,36 @@ app.use(cors())
 //COMPRESSION
 app.use(compression())
 
+
+function formatDate(s) {
+  let res = s
+  let year = s.substr(6, 4)
+  let month = s.substr(3, 2)
+  let day = s.substr(0, 2)
+
+  if (s.substr(0, 4).indexOf('-') !== -1) {
+    res = `${year}-${month}-${day}`
+
+    console.log(res)
+
+    if (res === '--') res = '0000-00-00'
+  }
+
+  return res
+}
+
+app.get('/reformatdate', async (req, res) => {
+  let karyawans = await db.models.Karyawan.findAll()
+  
+  for (let k of karyawans) {
+    k.pensiun = formatDate(k.pensiun)
+    k.tmt_pangkat_terakhir = formatDate(k.tmt_pangkat_terakhir)
+    k.tmt_gaji_berkala_terakhir = formatDate(k.tmt_gaji_berkala_terakhir)
+    k.tanggal_lahir = formatDate(k.tanggal_lahir)
+    await k.save()
+  }
+})
+
 const SECRET = 'simas1232425(*9hreh8989*989J()#$'
 
 let auth = Express.Router()
