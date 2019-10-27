@@ -261,7 +261,7 @@ secure.get('/pensiun', async (req, res) => {
           [Sequelize.Op.and]: [
             {
               pensiun: {
-                [Sequelize.Op.lt]: new Date()
+                [Sequelize.Op.gt]: new Date()
               }
             },
             {
@@ -269,7 +269,8 @@ secure.get('/pensiun', async (req, res) => {
                 [Sequelize.Op.notLike]: '0000-00-00'
               }
             },
-          ]}
+          ]},
+        order: [['pensiun', 'ASC']],
         },
         { page, limit }
       )
