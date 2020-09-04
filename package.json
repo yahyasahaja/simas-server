@@ -58,7 +58,7 @@
     "promise": "8.0.1",
     "promises-all": "^1.0.0",
     "raf": "3.4.0",
-    "sequelize": "^4.37.6",
+    "sequelize": "^5.15.1",
     "shortid": "^2.2.15",
     "whatwg-fetch": "2.0.3"
   }
